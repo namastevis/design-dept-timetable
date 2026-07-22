@@ -271,3 +271,102 @@ th {
     padding: 0.25rem 0.4rem;
     text-align: center;
 }
+
+.swipe-hint {
+    display: none;
+    font-size: 0.75rem;
+    color: #718096;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+/* Mobile: keep the day-by-day grid (rather than switching to a list view),
+   but make the horizontal scroll snap one day at a time, pin the time
+   column so it stays visible while swiping, and shrink everything to fit. */
+@media (max-width: 640px) {
+    .top-bar {
+        padding: 1rem 1.25rem;
+    }
+
+    .top-bar h1 {
+        font-size: 1.15rem;
+    }
+
+    .top-bar p {
+        font-size: 0.75rem;
+    }
+
+    .dashboard {
+        padding: 0 0.5rem;
+        margin: 1rem auto;
+    }
+
+    .controls-card,
+    .grid-card {
+        padding: 0.85rem;
+    }
+
+    .filters-row {
+        flex-wrap: wrap;
+    }
+
+    .reset-btn {
+        margin-left: auto;
+    }
+
+    .swipe-hint {
+        display: block;
+    }
+
+    .table-responsive {
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        min-width: 640px;
+    }
+
+    th,
+    td {
+        padding: 0.35rem;
+        font-size: 0.8rem;
+    }
+
+    th.time-col,
+    td.time-label {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        width: 62px;
+        min-width: 62px;
+    }
+
+    td.day-cell,
+    th:not(.time-col) {
+        scroll-snap-align: start;
+        min-width: 130px;
+    }
+
+    .course-card {
+        padding: 0.35rem;
+        font-size: 0.72rem;
+    }
+
+    /* Mobile cards show just the course name and faculty — the code and
+       section badge (identifying info that matters more on a desk/desktop
+       view) are hidden to save space. */
+    .course-card .code {
+        display: none;
+    }
+
+    .course-card .title {
+        font-size: 0.72rem;
+        font-weight: 500;
+        margin-bottom: 0.1rem;
+    }
+
+    .course-card .details {
+        font-size: 0.68rem;
+    }
+}
