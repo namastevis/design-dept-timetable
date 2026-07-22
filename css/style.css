@@ -158,6 +158,17 @@ body {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1.5rem;
+    max-height: 60px;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.25s ease, opacity 0.2s ease, margin-bottom 0.25s ease;
+}
+
+.view-toggle.toggle-hidden {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+    pointer-events: none;
 }
 
 .view-toggle-btn {
@@ -238,17 +249,35 @@ body {
 }
 
 .faculty-multiselect {
-    max-height: 170px;
+    max-height: 220px;
     overflow-y: auto;
     border: 1px solid #cbd5e0;
     border-radius: 5px;
     padding: 0.6rem;
+}
+
+.faculty-group + .faculty-group {
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid #edf2f7;
+}
+
+.faculty-group-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.4rem;
+}
+
+.faculty-group-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 0.3rem;
 }
 
-.faculty-multiselect label {
+.faculty-group-grid label {
     display: flex;
     align-items: center;
     gap: 0.4rem;
@@ -289,6 +318,10 @@ body {
         transparent 8px,
         transparent 16px
     );
+}
+
+.day-cell.slot-not-searched {
+    background-color: #fafafa;
 }
 
 .table-responsive {

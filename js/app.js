@@ -35,7 +35,26 @@ document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
     updateJumpButtonLabel();
     initEmptySlotView();
+    setupToggleScrollHide();
 });
+
+// The Timetable/Find-Empty-Slot toggle slides up and hides while scrolling
+// down (to save space once you're deep in the grid), and slides back down
+// as soon as you scroll back up. The sticky filter panel below it stays put.
+function setupToggleScrollHide() {
+    const toggle = document.querySelector(".view-toggle");
+    let lastScrollY = window.scrollY;
+
+    window.addEventListener("scroll", () => {
+        const currentScrollY = window.scrollY;
+        if (currentScrollY > lastScrollY && currentScrollY > 80) {
+            toggle.classList.add("toggle-hidden");
+        } else if (currentScrollY < lastScrollY) {
+            toggle.classList.remove("toggle-hidden");
+        }
+        lastScrollY = currentScrollY;
+    }, { passive: true });
+}
 
 function initFilters() {
     const semNumberSelect = document.getElementById("semNumberFilter");
@@ -406,26 +425,45 @@ function isWorkingSaturday(date) {
 }
 
 function initEmptySlotView() {
-    const terms = typeof TERMS !== "undefined" ? TERMS : [];
-    if (terms.length > 0) {
-        document.getElementById("emptyStartDate").value = terms[0].startDate;
-        document.getElementById("emptyEndDate").value = terms[terms.length - 1].endDate;
-    }
+    // Default range: the current calendar week (Mon-Fri), regardless of term status.
+    const today = new Date();
+    const weekStart = getMondayOf(today);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 4);
+    document.getElementById("emptyStartDate").value = formatLocalDate(weekStart);
+    document.getElementById("emptyEndDate").value = formatLocalDate(weekEnd);
 
-    const faculty = [...new Set(RAW_TIMETABLE_DATA.map(d => d.faculty))].filter(Boolean).sort();
+    // Faculty checkboxes are grouped by status (Regular / Visiting) rather
+    // than one flat alphabetical list.
     const container = document.getElementById("facultyMultiSelect");
-    faculty.forEach(name => {
-        const sample = RAW_TIMETABLE_DATA.find(d => d.faculty === name);
-        const label = document.createElement("label");
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.value = name;
-        cb.className = "faculty-checkbox";
-        cb.dataset.status = sample ? sample.facultyStatus : "";
-        label.appendChild(cb);
-        label.appendChild(document.createTextNode(name));
-        container.appendChild(label);
-    });
+    const buildGroup = (title, status) => {
+        const names = [...new Set(RAW_TIMETABLE_DATA.filter(d => d.facultyStatus === status).map(d => d.faculty))]
+            .filter(Boolean)
+            .sort();
+        const group = document.createElement("div");
+        group.className = "faculty-group";
+        const heading = document.createElement("div");
+        heading.className = "faculty-group-title";
+        heading.textContent = title;
+        group.appendChild(heading);
+        const grid = document.createElement("div");
+        grid.className = "faculty-group-grid";
+        names.forEach(name => {
+            const label = document.createElement("label");
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.value = name;
+            cb.className = "faculty-checkbox";
+            cb.dataset.status = status;
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(name));
+            grid.appendChild(label);
+        });
+        group.appendChild(grid);
+        return group;
+    };
+    container.appendChild(buildGroup("Regular", "regular"));
+    container.appendChild(buildGroup("Visiting", "visiting"));
 
     document.getElementById("selectAllFacultyBtn").addEventListener("click", () => {
         container.querySelectorAll(".faculty-checkbox").forEach(cb => (cb.checked = true));
@@ -560,8 +598,12 @@ function runEmptySlotSearch() {
     renderEmptySlotGrid(result, includeSaturday);
 }
 
+// The grid always shows all six day columns (Mon-Sat) so the layout doesn't
+// shift when the Saturday checkbox is toggled. Saturday's cells only reflect
+// actual search results when includeSaturday is checked; otherwise they show
+// a distinct "not included" state.
 function renderEmptySlotGrid(resultMap, includeSaturday) {
-    const days = includeSaturday ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Mon", "Tue", "Wed", "Thu", "Fri"];
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     const head = document.getElementById("emptySlotHead");
     head.innerHTML = `<tr><th class="time-col">Time Slot</th>${days.map(d => `<th>${DAY_LABELS[d]}</th>`).join("")}</tr>`;
@@ -571,14 +613,18 @@ function renderEmptySlotGrid(resultMap, includeSaturday) {
     GRID_SLOTS.forEach(slot => {
         let rowHtml = `<td class="time-label">${SLOT_LABELS[slot]}</td>`;
         days.forEach(day => {
-            const status = resultMap ? resultMap[day][slot] : null;
             let cls = "day-cell slot-unavailable";
             let content = "";
-            if (status === true) {
-                cls = "day-cell slot-free";
-                content = `<div class="free-label">Free</div>`;
-            } else if (status === false) {
-                cls = "day-cell slot-busy";
+            if (day === "Sat" && !includeSaturday) {
+                cls = "day-cell slot-not-searched";
+            } else {
+                const status = resultMap ? resultMap[day][slot] : null;
+                if (status === true) {
+                    cls = "day-cell slot-free";
+                    content = `<div class="free-label">Free</div>`;
+                } else if (status === false) {
+                    cls = "day-cell slot-busy";
+                }
             }
             rowHtml += `<td class="${cls}">${content}</td>`;
         });
