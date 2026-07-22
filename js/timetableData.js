@@ -1489,6 +1489,7 @@ const RAW_TIMETABLE_DATA = [
     "title": "Introduction to Dance",
     "credits": 2,
     "faculty": "Prof. Rujuta Soman / Prof. Vrushali Lele",
+    "facultyList": ["Prof. Rujuta Soman", "Prof. Vrushali Lele"],
     "facultyStatus": "visiting",
     "sectionId": "UGTERM1",
     "sectionLabel": null,

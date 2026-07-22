@@ -35,26 +35,17 @@ document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
     updateJumpButtonLabel();
     initEmptySlotView();
-    setupToggleScrollHide();
 });
 
-// The Timetable/Find-Empty-Slot toggle slides up and hides while scrolling
-// down (to save space once you're deep in the grid), and slides back down
-// as soon as you scroll back up. The sticky filter panel below it stays put.
-function setupToggleScrollHide() {
-    const toggle = document.querySelector(".view-toggle");
-    let lastScrollY = window.scrollY;
-
-    window.addEventListener("scroll", () => {
-        const currentScrollY = window.scrollY;
-        if (currentScrollY > lastScrollY && currentScrollY > 80) {
-            toggle.classList.add("toggle-hidden");
-        } else if (currentScrollY < lastScrollY) {
-            toggle.classList.remove("toggle-hidden");
-        }
-        lastScrollY = currentScrollY;
-    }, { passive: true });
-}
+// Note: the Timetable/Find-Empty-Slot toggle scrolling out of view while the
+// filter panel stays pinned is handled entirely in CSS (see .view-toggle and
+// .controls-card in style.css) rather than with a scroll listener. An
+// earlier JS-driven version toggled the toggle's height on scroll, which
+// shifted page layout mid-scroll and re-triggered the same scroll handler —
+// a feedback loop that showed up as jitter right as the header became
+// sticky. Letting the toggle be a normal (non-sticky) block that scrolls
+// away naturally, with only the filter panel itself sticky, avoids that
+// entirely.
 
 function initFilters() {
     const semNumberSelect = document.getElementById("semNumberFilter");
@@ -424,6 +415,15 @@ function isWorkingSaturday(date) {
     return weekOfMonth !== 1 && weekOfMonth !== 3;
 }
 
+// Most course-sections have a single faculty member. A few (e.g. DANC101,
+// co-taught by Prof. Rujuta Soman and Prof. Vrushali Lele) list multiple
+// people in `facultyList` — used only by the Find Empty Slot view so each
+// person can be selected individually, while the main grid card still shows
+// the combined `faculty` string as-is.
+function getFacultyNames(item) {
+    return item.facultyList && item.facultyList.length ? item.facultyList : [item.faculty];
+}
+
 function initEmptySlotView() {
     // Default range: the current calendar week (Mon-Fri), regardless of term status.
     const today = new Date();
@@ -437,7 +437,9 @@ function initEmptySlotView() {
     // than one flat alphabetical list.
     const container = document.getElementById("facultyMultiSelect");
     const buildGroup = (title, status) => {
-        const names = [...new Set(RAW_TIMETABLE_DATA.filter(d => d.facultyStatus === status).map(d => d.faculty))]
+        const names = [...new Set(
+            RAW_TIMETABLE_DATA.filter(d => d.facultyStatus === status).flatMap(d => getFacultyNames(d))
+        )]
             .filter(Boolean)
             .sort();
         const group = document.createElement("div");
@@ -533,7 +535,7 @@ function runEmptySlotSearch() {
         GRID_SLOTS.forEach(s => (busy[d][s] = []));
     });
     RAW_TIMETABLE_DATA.forEach(item => {
-        if (!selectedFaculty.includes(item.faculty)) return;
+        if (!getFacultyNames(item).some(name => selectedFaculty.includes(name))) return;
         const itemStart = parseLocalDate(item.startDate);
         const itemEnd = parseLocalDate(item.endDate);
         item.sessions.forEach(session => {
