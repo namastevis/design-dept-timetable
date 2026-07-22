@@ -272,7 +272,7 @@ const RAW_TIMETABLE_DATA = [
     "code": "DESG301",
     "title": "Design Thinking and Design Process",
     "credits": 3,
-    "faculty": "Prof. Amit Kundal + TA",
+    "faculty": "Prof. Amit Kundal",
     "facultyStatus": "regular",
     "sectionId": "UGSEM3A",
     "sectionLabel": "A",

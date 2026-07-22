@@ -50,35 +50,38 @@ function initFilters() {
         semNumberSelect.appendChild(opt);
     });
 
-    // Course and Faculty filters are cross-linked (see refreshFacultyOptions /
-    // refreshCourseOptions below): picking a course narrows Faculty to only
-    // the people teaching it, and picking a faculty member narrows Course to
-    // only what they teach. Both start unfiltered ("all") on page load.
+    // Course and Faculty options are cross-linked to every other active
+    // filter (see refreshFacultyOptions / refreshCourseOptions below):
+    // picking a course narrows Faculty to only the people teaching it,
+    // picking a faculty member narrows Course to only what they teach,
+    // and picking a Course Type / Semester / Faculty Type narrows both —
+    // e.g. selecting "Semester 5" leaves only Sem-5 courses and the
+    // faculty who teach in Sem-5 selectable. All start unfiltered ("all").
     refreshFacultyOptions();
     refreshCourseOptions();
 }
 
-// Faculty who teach the currently-selected course (or everyone, if "all").
-function getFacultyOptionsForCourse(courseCode) {
-    let items = RAW_TIMETABLE_DATA;
-    if (courseCode !== "all") {
-        items = items.filter(d => d.code === courseCode);
-    }
-    return [...new Set(items.map(d => d.faculty))].filter(Boolean).sort();
+// Reads the current value of every filter control.
+function getCurrentFilterValues() {
+    return {
+        courseType: document.getElementById("courseTypeFilter").value,
+        semNumber: document.getElementById("semNumberFilter").value,
+        course: document.getElementById("courseFilter").value,
+        faculty: document.getElementById("facultyFilter").value,
+        facultyStatus: document.getElementById("facultyStatusFilter").value,
+    };
 }
 
-// Courses taught by the currently-selected faculty member (or all courses).
-// Returns [code, title] pairs, one per unique course code.
-function getCourseOptionsForFaculty(facultyName) {
-    let items = RAW_TIMETABLE_DATA;
-    if (facultyName !== "all") {
-        items = items.filter(d => d.faculty === facultyName);
-    }
-    const courseMap = new Map();
-    items.forEach(d => {
-        if (!courseMap.has(d.code)) courseMap.set(d.code, d.title);
-    });
-    return [...courseMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+// Whether a course-section matches the given filter values, ignoring any
+// filter keys listed in `skip` (used when computing a dropdown's own
+// options — a filter shouldn't narrow itself out).
+function itemMatchesFilters(item, filters, skip = []) {
+    if (!skip.includes("courseType") && filters.courseType !== "all" && item.courseType !== filters.courseType) return false;
+    if (!skip.includes("semNumber") && filters.semNumber !== "all" && item.semesterNumber !== filters.semNumber) return false;
+    if (!skip.includes("course") && filters.course !== "all" && item.code !== filters.course) return false;
+    if (!skip.includes("faculty") && filters.faculty !== "all" && item.faculty !== filters.faculty) return false;
+    if (!skip.includes("facultyStatus") && filters.facultyStatus !== "all" && item.facultyStatus !== filters.facultyStatus) return false;
+    return true;
 }
 
 // Repopulates a <select>'s options, preserving the current selection if it's
@@ -110,15 +113,21 @@ function populateSelect(selectEl, entries, allLabel) {
 }
 
 function refreshFacultyOptions() {
-    const courseSelect = document.getElementById("courseFilter");
-    const facultySelect = document.getElementById("facultyFilter");
-    populateSelect(facultySelect, getFacultyOptionsForCourse(courseSelect.value), "All Faculty");
+    const filters = getCurrentFilterValues();
+    const items = RAW_TIMETABLE_DATA.filter(d => itemMatchesFilters(d, filters, ["faculty"]));
+    const faculty = [...new Set(items.map(d => d.faculty))].filter(Boolean).sort();
+    populateSelect(document.getElementById("facultyFilter"), faculty, "All Faculty");
 }
 
 function refreshCourseOptions() {
-    const facultySelect = document.getElementById("facultyFilter");
-    const courseSelect = document.getElementById("courseFilter");
-    populateSelect(courseSelect, getCourseOptionsForFaculty(facultySelect.value), "All Courses");
+    const filters = getCurrentFilterValues();
+    const items = RAW_TIMETABLE_DATA.filter(d => itemMatchesFilters(d, filters, ["course"]));
+    const courseMap = new Map();
+    items.forEach(d => {
+        if (!courseMap.has(d.code)) courseMap.set(d.code, d.title);
+    });
+    const courses = [...courseMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    populateSelect(document.getElementById("courseFilter"), courses, "All Courses");
 }
 
 // Decide what the "Jump to..." button should do based on today's real date
@@ -187,10 +196,20 @@ function setupEventListeners() {
     });
     document.getElementById("courseTypeFilter").addEventListener("change", () => {
         updateSemNumberFilterState();
+        refreshFacultyOptions();
+        refreshCourseOptions();
         renderGrid();
     });
-    document.getElementById("semNumberFilter").addEventListener("change", renderGrid);
-    document.getElementById("facultyStatusFilter").addEventListener("change", renderGrid);
+    document.getElementById("semNumberFilter").addEventListener("change", () => {
+        refreshFacultyOptions();
+        refreshCourseOptions();
+        renderGrid();
+    });
+    document.getElementById("facultyStatusFilter").addEventListener("change", () => {
+        refreshFacultyOptions();
+        refreshCourseOptions();
+        renderGrid();
+    });
 
     document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
 }
