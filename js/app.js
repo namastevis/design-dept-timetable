@@ -37,18 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initFilters() {
-    const facultySelect = document.getElementById("facultyFilter");
     const semNumberSelect = document.getElementById("semNumberFilter");
-    const courseSelect = document.getElementById("courseFilter");
-
-    // Extract Unique Faculties
-    const faculties = [...new Set(RAW_TIMETABLE_DATA.map(d => d.faculty))].filter(Boolean).sort();
-    faculties.forEach(fac => {
-        const opt = document.createElement("option");
-        opt.value = fac;
-        opt.textContent = fac;
-        facultySelect.appendChild(opt);
-    });
 
     // Extract Unique Semester Numbers (for the sub-filter, only relevant to Semester courses)
     const semNumbers = [...new Set(RAW_TIMETABLE_DATA.map(d => d.semesterNumber))]
@@ -61,20 +50,75 @@ function initFilters() {
         semNumberSelect.appendChild(opt);
     });
 
-    // Extract Unique Courses (by code — every code belongs to exactly one
-    // semester/term, so selecting one shows all its sections together).
+    // Course and Faculty filters are cross-linked (see refreshFacultyOptions /
+    // refreshCourseOptions below): picking a course narrows Faculty to only
+    // the people teaching it, and picking a faculty member narrows Course to
+    // only what they teach. Both start unfiltered ("all") on page load.
+    refreshFacultyOptions();
+    refreshCourseOptions();
+}
+
+// Faculty who teach the currently-selected course (or everyone, if "all").
+function getFacultyOptionsForCourse(courseCode) {
+    let items = RAW_TIMETABLE_DATA;
+    if (courseCode !== "all") {
+        items = items.filter(d => d.code === courseCode);
+    }
+    return [...new Set(items.map(d => d.faculty))].filter(Boolean).sort();
+}
+
+// Courses taught by the currently-selected faculty member (or all courses).
+// Returns [code, title] pairs, one per unique course code.
+function getCourseOptionsForFaculty(facultyName) {
+    let items = RAW_TIMETABLE_DATA;
+    if (facultyName !== "all") {
+        items = items.filter(d => d.faculty === facultyName);
+    }
     const courseMap = new Map();
-    RAW_TIMETABLE_DATA.forEach(d => {
+    items.forEach(d => {
         if (!courseMap.has(d.code)) courseMap.set(d.code, d.title);
     });
-    [...courseMap.entries()]
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .forEach(([code, title]) => {
-            const opt = document.createElement("option");
+    return [...courseMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+// Repopulates a <select>'s options, preserving the current selection if it's
+// still among the new options, otherwise resetting to "all".
+function populateSelect(selectEl, entries, allLabel) {
+    const currentValue = selectEl.value;
+    selectEl.innerHTML = "";
+
+    const allOpt = document.createElement("option");
+    allOpt.value = "all";
+    allOpt.textContent = allLabel;
+    selectEl.appendChild(allOpt);
+
+    entries.forEach(entry => {
+        const opt = document.createElement("option");
+        if (Array.isArray(entry)) {
+            const [code, title] = entry;
             opt.value = code;
             opt.textContent = `${code} — ${title}`;
-            courseSelect.appendChild(opt);
-        });
+        } else {
+            opt.value = entry;
+            opt.textContent = entry;
+        }
+        selectEl.appendChild(opt);
+    });
+
+    const stillValid = [...selectEl.options].some(o => o.value === currentValue);
+    selectEl.value = stillValid ? currentValue : "all";
+}
+
+function refreshFacultyOptions() {
+    const courseSelect = document.getElementById("courseFilter");
+    const facultySelect = document.getElementById("facultyFilter");
+    populateSelect(facultySelect, getFacultyOptionsForCourse(courseSelect.value), "All Faculty");
+}
+
+function refreshCourseOptions() {
+    const facultySelect = document.getElementById("facultyFilter");
+    const courseSelect = document.getElementById("courseFilter");
+    populateSelect(courseSelect, getCourseOptionsForFaculty(facultySelect.value), "All Courses");
 }
 
 // Decide what the "Jump to..." button should do based on today's real date
@@ -133,14 +177,35 @@ function setupEventListeners() {
     });
 
     // Filter Change Listeners
-    document.getElementById("facultyFilter").addEventListener("change", renderGrid);
-    document.getElementById("courseFilter").addEventListener("change", renderGrid);
+    document.getElementById("facultyFilter").addEventListener("change", () => {
+        refreshCourseOptions();
+        renderGrid();
+    });
+    document.getElementById("courseFilter").addEventListener("change", () => {
+        refreshFacultyOptions();
+        renderGrid();
+    });
     document.getElementById("courseTypeFilter").addEventListener("change", () => {
         updateSemNumberFilterState();
         renderGrid();
     });
     document.getElementById("semNumberFilter").addEventListener("change", renderGrid);
     document.getElementById("facultyStatusFilter").addEventListener("change", renderGrid);
+
+    document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
+}
+
+// Clears every filter back to its default ("all") state and re-renders.
+function resetFilters() {
+    document.getElementById("courseTypeFilter").value = "all";
+    document.getElementById("semNumberFilter").value = "all";
+    document.getElementById("semNumberFilter").disabled = false;
+    document.getElementById("facultyFilter").value = "all";
+    document.getElementById("courseFilter").value = "all";
+    document.getElementById("facultyStatusFilter").value = "all";
+    refreshFacultyOptions();
+    refreshCourseOptions();
+    renderGrid();
 }
 
 // The "Semester Number" sub-filter only makes sense when Course Type is

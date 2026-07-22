@@ -30,48 +30,60 @@
         </div>
 
         <!-- Filters -->
-        <div class="filters-grid">
-          <div class="filter-group">
-            <label for="courseTypeFilter">Course Type:</label>
-            <select id="courseTypeFilter">
-              <option value="all">All Course Types</option>
-              <option value="semester">Semester (Green)</option>
-              <option value="term">Term (Red/Orange)</option>
-            </select>
+        <div class="filters-row">
+          <div class="filters-grid">
+            <div class="filter-group">
+              <label for="courseTypeFilter">Course Type:</label>
+              <select id="courseTypeFilter">
+                <option value="all">All Course Types</option>
+                <option value="semester">Semester (Green)</option>
+                <option value="term">Term (Red/Orange)</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="semNumberFilter">Semester:</label>
+              <select id="semNumberFilter">
+                <option value="all">All Semesters</option>
+                <!-- Options populated dynamically: Sem 3, 5, 7 -->
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="courseFilter">Course:</label>
+              <select id="courseFilter">
+                <option value="all">All Courses</option>
+                <!-- Options populated dynamically: shows all sections of the selected course -->
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="facultyFilter">Faculty Member:</label>
+              <select id="facultyFilter">
+                <option value="all">All Faculty</option>
+                <!-- Options populated dynamically -->
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="facultyStatusFilter">Faculty Type:</label>
+              <select id="facultyStatusFilter">
+                <option value="all">All Faculty Types</option>
+                <option value="regular">Regular</option>
+                <option value="visiting">Visiting</option>
+              </select>
+            </div>
           </div>
 
-          <div class="filter-group">
-            <label for="semNumberFilter">Semester:</label>
-            <select id="semNumberFilter">
-              <option value="all">All Semesters</option>
-              <!-- Options populated dynamically: Sem 3, 5, 7 -->
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label for="courseFilter">Course:</label>
-            <select id="courseFilter">
-              <option value="all">All Courses</option>
-              <!-- Options populated dynamically: shows all sections of the selected course -->
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label for="facultyFilter">Faculty Member:</label>
-            <select id="facultyFilter">
-              <option value="all">All Faculty</option>
-              <!-- Options populated dynamically -->
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label for="facultyStatusFilter">Faculty Type:</label>
-            <select id="facultyStatusFilter">
-              <option value="all">All Faculty Types</option>
-              <option value="regular">Regular</option>
-              <option value="visiting">Visiting</option>
-            </select>
-          </div>
+          <button
+            id="resetFiltersBtn"
+            class="reset-btn"
+            type="button"
+            title="Reset all filters"
+            aria-label="Reset all filters"
+          >
+            &#8635;
+          </button>
         </div>
       </section>
 
