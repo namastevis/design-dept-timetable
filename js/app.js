@@ -48,44 +48,25 @@ document.addEventListener("DOMContentLoaded", () => {
 // entirely.
 
 function initFilters() {
-    const semNumberSelect = document.getElementById("semNumberFilter");
-
-    // Extract Unique Semester Numbers (for the sub-filter, only relevant to Semester courses)
-    const semNumbers = [...new Set(RAW_TIMETABLE_DATA.map(d => d.semesterNumber))]
-        .filter(Boolean)
-        .sort((a, b) => Number(a) - Number(b));
-    semNumbers.forEach(num => {
-        const opt = document.createElement("option");
-        opt.value = num;
-        opt.textContent = `Semester ${num}`;
-        semNumberSelect.appendChild(opt);
-    });
-
-    // Course and Faculty options are cross-linked to every other active
-    // filter (see refreshFacultyOptions / refreshCourseOptions below):
-    // picking a course narrows Faculty to only the people teaching it,
-    // picking a faculty member narrows Course to only what they teach,
-    // and picking a Course Type / Semester / Faculty Type narrows both —
-    // e.g. selecting "Semester 5" leaves only Sem-5 courses and the
-    // faculty who teach in Sem-5 selectable. All start unfiltered ("all").
+    // Course Types, Course, Faculty, and Semester/Term options are all
+    // cross-linked to every other active filter (see refreshSemNumberOptions
+    // / refreshFacultyOptions / refreshCourseOptions below): picking a
+    // course narrows Faculty to only the people teaching it, picking a
+    // faculty member narrows Course to only what they teach, and picking a
+    // Course Type / Semester / Faculty Type narrows all of them — e.g.
+    // selecting "Term (Blue)" in Course Types leaves only "Term 1" (no
+    // Semester numbers) selectable in the Semester/Term dropdown, and only
+    // the faculty/courses that run in Term 1. All start unfiltered ("all").
+    refreshSemNumberOptions();
     refreshFacultyOptions();
     refreshCourseOptions();
-}
-
-// "term1" is a display-only placeholder shown in the Semester dropdown when
-// Semester/Term is set to "Term" (see updateSemNumberFilterState) — it
-// doesn't correspond to a real semesterNumber value, so treat it as "all"
-// (no additional filtering) everywhere it's read.
-function normalizedSemNumber() {
-    const value = document.getElementById("semNumberFilter").value;
-    return value === "term1" ? "all" : value;
 }
 
 // Reads the current value of every filter control.
 function getCurrentFilterValues() {
     return {
         courseType: document.getElementById("courseTypeFilter").value,
-        semNumber: normalizedSemNumber(),
+        semNumber: document.getElementById("semNumberFilter").value,
         course: document.getElementById("courseFilter").value,
         faculty: document.getElementById("facultyFilter").value,
         facultyStatus: document.getElementById("facultyStatusFilter").value,
@@ -95,9 +76,19 @@ function getCurrentFilterValues() {
 // Whether a course-section matches the given filter values, ignoring any
 // filter keys listed in `skip` (used when computing a dropdown's own
 // options — a filter shouldn't narrow itself out).
+//
+// semNumber has one special value, "term1", which doesn't correspond to a
+// real semesterNumber field (Term-type courses don't have one) — it means
+// "any Term-type course" instead, since there's no Term 2 data yet.
 function itemMatchesFilters(item, filters, skip = []) {
     if (!skip.includes("courseType") && filters.courseType !== "all" && item.courseType !== filters.courseType) return false;
-    if (!skip.includes("semNumber") && filters.semNumber !== "all" && item.semesterNumber !== filters.semNumber) return false;
+    if (!skip.includes("semNumber") && filters.semNumber !== "all") {
+        if (filters.semNumber === "term1") {
+            if (item.courseType !== "term") return false;
+        } else if (item.semesterNumber !== filters.semNumber) {
+            return false;
+        }
+    }
     if (!skip.includes("course") && filters.course !== "all" && item.code !== filters.course) return false;
     if (!skip.includes("faculty") && filters.faculty !== "all" && item.faculty !== filters.faculty) return false;
     if (!skip.includes("facultyStatus") && filters.facultyStatus !== "all" && item.facultyStatus !== filters.facultyStatus) return false;
@@ -127,6 +118,50 @@ function populateSelect(selectEl, entries, allLabel) {
         }
         selectEl.appendChild(opt);
     });
+
+    const stillValid = [...selectEl.options].some(o => o.value === currentValue);
+    selectEl.value = stillValid ? currentValue : "all";
+}
+
+// The Semester/Term dropdown mixes two kinds of values: real semester
+// numbers (3, 5, 7 — only meaningful for Semester-type courses) and the
+// single "term1" value (meaning "any Term-type course"). Its options are
+// cross-linked like Course/Faculty: picking "Semester (Green)" in Course
+// Types leaves only Semester numbers here (Term 1 disappears, since no
+// Term-type item matches), and picking "Term (Blue)" leaves only "Term 1"
+// (the Semester numbers disappear). Left on "Course Types: Semester &
+// Term", both kinds of options are shown together.
+function refreshSemNumberOptions() {
+    const selectEl = document.getElementById("semNumberFilter");
+    const filters = getCurrentFilterValues();
+    const items = RAW_TIMETABLE_DATA.filter(d => itemMatchesFilters(d, filters, ["semNumber"]));
+
+    const semNumbers = [...new Set(items.filter(d => d.courseType === "semester").map(d => d.semesterNumber))]
+        .filter(Boolean)
+        .sort((a, b) => Number(a) - Number(b));
+    const hasTerm = items.some(d => d.courseType === "term");
+
+    const currentValue = selectEl.value;
+    selectEl.innerHTML = "";
+
+    const allOpt = document.createElement("option");
+    allOpt.value = "all";
+    allOpt.textContent = "All Semesters";
+    selectEl.appendChild(allOpt);
+
+    semNumbers.forEach(num => {
+        const opt = document.createElement("option");
+        opt.value = num;
+        opt.textContent = `Semester ${num}`;
+        selectEl.appendChild(opt);
+    });
+
+    if (hasTerm) {
+        const opt = document.createElement("option");
+        opt.value = "term1";
+        opt.textContent = "Term 1";
+        selectEl.appendChild(opt);
+    }
 
     const stillValid = [...selectEl.options].some(o => o.value === currentValue);
     selectEl.value = stillValid ? currentValue : "all";
@@ -207,15 +242,17 @@ function setupEventListeners() {
 
     // Filter Change Listeners
     document.getElementById("facultyFilter").addEventListener("change", () => {
+        refreshSemNumberOptions();
         refreshCourseOptions();
         renderGrid();
     });
     document.getElementById("courseFilter").addEventListener("change", () => {
+        refreshSemNumberOptions();
         refreshFacultyOptions();
         renderGrid();
     });
     document.getElementById("courseTypeFilter").addEventListener("change", () => {
-        updateSemNumberFilterState();
+        refreshSemNumberOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
         renderGrid();
@@ -226,6 +263,7 @@ function setupEventListeners() {
         renderGrid();
     });
     document.getElementById("facultyStatusFilter").addEventListener("change", () => {
+        refreshSemNumberOptions();
         refreshFacultyOptions();
         refreshCourseOptions();
         renderGrid();
@@ -237,45 +275,14 @@ function setupEventListeners() {
 // Clears every filter back to its default ("all") state and re-renders.
 function resetFilters() {
     document.getElementById("courseTypeFilter").value = "all";
-    const semNumberSelect = document.getElementById("semNumberFilter");
-    const termOption = semNumberSelect.querySelector('option[value="term1"]');
-    if (termOption) termOption.remove();
-    semNumberSelect.value = "all";
-    semNumberSelect.disabled = false;
+    document.getElementById("semNumberFilter").value = "all";
     document.getElementById("facultyFilter").value = "all";
     document.getElementById("courseFilter").value = "all";
     document.getElementById("facultyStatusFilter").value = "all";
+    refreshSemNumberOptions();
     refreshFacultyOptions();
     refreshCourseOptions();
     renderGrid();
-}
-
-// The "Semester Number" sub-filter only makes sense when Semester/Term is
-// set to "Semester" (or "All"). When "Term" is selected, there's only Term 1
-// in the data (no Term 2 course info yet), so rather than leaving this
-// dropdown on a confusing greyed-out "All Semesters", show "Term 1"
-// explicitly. That value is purely informational — see the "term1" special
-// case in getCurrentFilterValues, which treats it as "no extra filter"
-// since courseType === "term" already narrows to Term 1 on its own.
-function updateSemNumberFilterState() {
-    const courseType = document.getElementById("courseTypeFilter").value;
-    const semNumberSelect = document.getElementById("semNumberFilter");
-    let termOption = semNumberSelect.querySelector('option[value="term1"]');
-
-    if (courseType === "term") {
-        if (!termOption) {
-            termOption = document.createElement("option");
-            termOption.value = "term1";
-            termOption.textContent = "Term 1";
-            semNumberSelect.appendChild(termOption);
-        }
-        semNumberSelect.value = "term1";
-        semNumberSelect.disabled = true;
-    } else {
-        if (termOption) termOption.remove();
-        semNumberSelect.value = "all";
-        semNumberSelect.disabled = false;
-    }
 }
 
 function changeWeek(days) {
@@ -295,7 +302,7 @@ function renderGrid() {
     const selectedFaculty = document.getElementById("facultyFilter").value;
     const selectedCourse = document.getElementById("courseFilter").value;
     const selectedCourseType = document.getElementById("courseTypeFilter").value;
-    const selectedSemNumber = normalizedSemNumber();
+    const selectedSemNumber = document.getElementById("semNumberFilter").value;
     const selectedStatus = document.getElementById("facultyStatusFilter").value;
 
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -327,7 +334,11 @@ function renderGrid() {
         if (selectedFaculty !== "all" && item.faculty !== selectedFaculty) return;
         if (selectedCourse !== "all" && item.code !== selectedCourse) return;
         if (selectedCourseType !== "all" && item.courseType !== selectedCourseType) return;
-        if (selectedSemNumber !== "all" && item.semesterNumber !== selectedSemNumber) return;
+        if (selectedSemNumber === "term1") {
+            if (item.courseType !== "term") return;
+        } else if (selectedSemNumber !== "all" && item.semesterNumber !== selectedSemNumber) {
+            return;
+        }
         if (selectedStatus !== "all" && item.facultyStatus !== selectedStatus) return;
 
         // Date check: Does the current week overlap the course's active date range?
