@@ -484,6 +484,20 @@ function initEmptySlotView() {
     document.getElementById("viewToggleTimetable").addEventListener("click", () => switchView("timetable"));
     document.getElementById("viewToggleEmptySlot").addEventListener("click", () => switchView("emptySlot"));
 
+    // Picking a start date snaps it to that week's Monday and auto-fills
+    // the end date with that week's Friday, then immediately searches that
+    // full week (if faculty are already selected).
+    document.getElementById("emptyStartDate").addEventListener("change", () => {
+        const startInput = document.getElementById("emptyStartDate");
+        if (!startInput.value) return;
+        const weekStart = getMondayOf(parseLocalDate(startInput.value));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 4);
+        startInput.value = formatLocalDate(weekStart);
+        document.getElementById("emptyEndDate").value = formatLocalDate(weekEnd);
+        runEmptySlotSearch();
+    });
+
     // Render an initial blank grid so the view isn't empty before a search runs.
     renderEmptySlotGrid(null, false);
 }

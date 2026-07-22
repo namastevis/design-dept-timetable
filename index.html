@@ -15,13 +15,20 @@
     </header>
 
     <main class="dashboard">
-      <!-- Sticky header: view toggle + whichever filter panel is active stay
-           fixed at the top while the grid below scrolls underneath. -->
-      <div class="sticky-header">
-        <div class="view-toggle">
-          <button id="viewToggleTimetable" class="view-toggle-btn active" type="button">Timetable View</button>
-          <button id="viewToggleEmptySlot" class="view-toggle-btn" type="button">Find Empty Slot</button>
-        </div>
+      <!-- View toggle scrolls away normally; the filter panels below are
+           position:sticky. Note: they're kept as DIRECT children of
+           <main class="dashboard"> (not wrapped in a short intermediate
+           div) on purpose — a sticky element can only stay "stuck" while
+           scrolling through the vertical span of its own containing block
+           (nearest block-level ancestor). A short wrapper here would give
+           it almost no room to stick before being forced to scroll away
+           with that wrapper, which looked like "the filters don't stick,
+           they just scroll up and vanish". main.dashboard spans the whole
+           page's content, so the filters stay pinned for the full scroll. -->
+      <div class="view-toggle">
+        <button id="viewToggleTimetable" class="view-toggle-btn active" type="button">Timetable View</button>
+        <button id="viewToggleEmptySlot" class="view-toggle-btn" type="button">Find Empty Slot</button>
+      </div>
 
         <!-- Controls & Filters Section (Timetable view) -->
         <section class="controls-card" id="timetableControls">
@@ -130,7 +137,6 @@
           <button id="findEmptySlotsBtn" class="btn" type="button">Find Empty Slots</button>
           <p id="emptySlotMessage" class="empty-slot-message" style="display: none"></p>
         </section>
-      </div>
 
       <!-- Timetable Grid -->
       <div id="timetableGridSection">
