@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Department Timetable | AY 2026-27</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <div class="brand">
+        <h1>Department Timetable</h1>
+        <p>Academic Year 2026–27 (Term 1 & Semesters 3, 5, 7)</p>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <!-- Controls & Filters Section -->
+      <section class="controls-card">
+        <!-- Week Navigation Controls -->
+        <div class="week-controls">
+          <button id="prevWeekBtn" class="btn">&larr; Previous Week</button>
+          <div class="week-info">
+            <h2 id="currentWeekDisplay">Loading dates...</h2>
+          </div>
+          <button id="nextWeekBtn" class="btn">Next Week &rarr;</button>
+          <button id="jumpToTodayBtn" class="btn btn-secondary">
+            Jump to Term Start
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label for="courseTypeFilter">Course Type:</label>
+            <select id="courseTypeFilter">
+              <option value="all">All Course Types</option>
+              <option value="semester">Semester (Green)</option>
+              <option value="term">Term (Red/Orange)</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="semNumberFilter">Semester:</label>
+            <select id="semNumberFilter">
+              <option value="all">All Semesters</option>
+              <!-- Options populated dynamically: Sem 3, 5, 7 -->
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="facultyFilter">Faculty Member:</label>
+            <select id="facultyFilter">
+              <option value="all">All Faculty</option>
+              <!-- Options populated dynamically -->
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="facultyStatusFilter">Faculty Type:</label>
+            <select id="facultyStatusFilter">
+              <option value="all">All Faculty Types</option>
+              <option value="regular">Regular</option>
+              <option value="visiting">Visiting</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Timetable Grid -->
+      <section class="grid-card">
+        <div class="table-responsive">
+          <table id="timetableGrid">
+            <thead>
+              <tr>
+                <th class="time-col">Time Slot</th>
+                <th id="th-Mon">Monday</th>
+                <th id="th-Tue">Tuesday</th>
+                <th id="th-Wed">Wednesday</th>
+                <th id="th-Thu">Thursday</th>
+                <th id="th-Fri">Friday</th>
+              </tr>
+            </thead>
+            <tbody id="gridBody">
+              <tr data-time="08:00">
+                <td class="time-label">08:00 - 08:55</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+              <tr data-time="09:00">
+                <td class="time-label">09:00 - 09:55</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+              <tr data-time="10:00">
+                <td class="time-label">10:00 - 10:55</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+              <tr data-time="11:00">
+                <td class="time-label">11:00 - 11:55</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+              <tr data-time="12:00">
+                <td class="time-label">12:00 - 12:55</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+              <tr data-time="13:00">
+                <td class="time-label">13:00 - 13:55</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+              <tr data-time="14:15">
+                <td class="time-label">14:15 - 15:10</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+              <tr data-time="15:15">
+                <td class="time-label">15:15 - 16:10</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+              <tr data-time="16:15">
+                <td class="time-label">16:15 - 17:10</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+              <tr data-time="17:15">
+                <td class="time-label">17:15 - 18:10</td>
+                <td class="day-cell" data-day="Mon"></td>
+                <td class="day-cell" data-day="Tue"></td>
+                <td class="day-cell" data-day="Wed"></td>
+                <td class="day-cell" data-day="Thu"></td>
+                <td class="day-cell" data-day="Fri"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/timetableData.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

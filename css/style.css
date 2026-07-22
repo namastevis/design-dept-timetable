@@ -1,0 +1,242 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f4f6f9;
+    color: #333;
+    line-height: 1.5;
+}
+
+.top-bar {
+    background-color: #1a252f;
+    color: #fff;
+    padding: 1.25rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.top-bar h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.top-bar p {
+    font-size: 0.85rem;
+    color: #a0aec0;
+}
+
+.dashboard {
+    max-width: 1400px;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+}
+
+.controls-card, .grid-card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    margin-bottom: 1.5rem;
+}
+
+.week-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #edf2f7;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.week-info h2 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background-color: #3182ce;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn:hover {
+    background-color: #2b6cb0;
+}
+
+.btn-secondary {
+    background-color: #718096;
+}
+
+.btn-secondary:hover {
+    background-color: #4a5568;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.35rem;
+}
+
+.filter-group select {
+    padding: 0.5rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 5px;
+    background: white;
+    font-size: 0.9rem;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+th, td {
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem;
+    vertical-align: top;
+    width: 18%;
+}
+
+th.time-col, td.time-label {
+    width: 10%;
+    background-color: #f7fafc;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #4a5568;
+}
+
+th {
+    background-color: #2d3748;
+    color: white;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.95rem;
+}
+
+.day-cell {
+    min-height: 80px;
+    background-color: #ffffff;
+}
+
+/* Course Cards in Grid */
+.course-card {
+    padding: 0.5rem;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-left: 4px solid #cbd5e0;
+}
+
+/* Semester Course Style (Green) */
+.course-card.semester {
+    background-color: #f0fff4;
+    border-left-color: #38a169;
+    color: #22543d;
+}
+
+/* Term / Block Course Style (Red/Orange) */
+.course-card.term {
+    background-color: #fff5f5;
+    border-left-color: #e53e3e;
+    color: #742a2a;
+}
+
+.course-card .code {
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.course-card .title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.course-card .details {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.badge-visiting {
+    background: #feebc8;
+    color: #7b341e;
+}
+
+.badge-regular {
+    background: #e2e8f0;
+    color: #2d3748;
+}
+
+.badge-venue {
+    background: #edf2f7;
+    color: #4a5568;
+    margin-left: 0.25rem;
+}
+
+.badge-section {
+    background: #ebf4ff;
+    color: #2c5282;
+    margin-left: 0.25rem;
+}
+
+.day-cell.holiday-cell {
+    background-color: #f7f7f7;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.03),
+        rgba(0, 0, 0, 0.03) 8px,
+        transparent 8px,
+        transparent 16px
+    );
+}
+
+.holiday-note {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #975a16;
+    background: #fefcbf;
+    border-radius: 4px;
+    padding: 0.25rem 0.4rem;
+    text-align: center;
+}
