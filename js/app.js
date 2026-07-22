@@ -72,11 +72,20 @@ function initFilters() {
     refreshCourseOptions();
 }
 
+// "term1" is a display-only placeholder shown in the Semester dropdown when
+// Semester/Term is set to "Term" (see updateSemNumberFilterState) — it
+// doesn't correspond to a real semesterNumber value, so treat it as "all"
+// (no additional filtering) everywhere it's read.
+function normalizedSemNumber() {
+    const value = document.getElementById("semNumberFilter").value;
+    return value === "term1" ? "all" : value;
+}
+
 // Reads the current value of every filter control.
 function getCurrentFilterValues() {
     return {
         courseType: document.getElementById("courseTypeFilter").value,
-        semNumber: document.getElementById("semNumberFilter").value,
+        semNumber: normalizedSemNumber(),
         course: document.getElementById("courseFilter").value,
         faculty: document.getElementById("facultyFilter").value,
         facultyStatus: document.getElementById("facultyStatusFilter").value,
@@ -228,8 +237,11 @@ function setupEventListeners() {
 // Clears every filter back to its default ("all") state and re-renders.
 function resetFilters() {
     document.getElementById("courseTypeFilter").value = "all";
-    document.getElementById("semNumberFilter").value = "all";
-    document.getElementById("semNumberFilter").disabled = false;
+    const semNumberSelect = document.getElementById("semNumberFilter");
+    const termOption = semNumberSelect.querySelector('option[value="term1"]');
+    if (termOption) termOption.remove();
+    semNumberSelect.value = "all";
+    semNumberSelect.disabled = false;
     document.getElementById("facultyFilter").value = "all";
     document.getElementById("courseFilter").value = "all";
     document.getElementById("facultyStatusFilter").value = "all";
@@ -238,15 +250,30 @@ function resetFilters() {
     renderGrid();
 }
 
-// The "Semester Number" sub-filter only makes sense when Course Type is
-// "Semester" (or "All"). Disable + reset it when "Term" is selected.
+// The "Semester Number" sub-filter only makes sense when Semester/Term is
+// set to "Semester" (or "All"). When "Term" is selected, there's only Term 1
+// in the data (no Term 2 course info yet), so rather than leaving this
+// dropdown on a confusing greyed-out "All Semesters", show "Term 1"
+// explicitly. That value is purely informational — see the "term1" special
+// case in getCurrentFilterValues, which treats it as "no extra filter"
+// since courseType === "term" already narrows to Term 1 on its own.
 function updateSemNumberFilterState() {
     const courseType = document.getElementById("courseTypeFilter").value;
     const semNumberSelect = document.getElementById("semNumberFilter");
+    let termOption = semNumberSelect.querySelector('option[value="term1"]');
+
     if (courseType === "term") {
-        semNumberSelect.value = "all";
+        if (!termOption) {
+            termOption = document.createElement("option");
+            termOption.value = "term1";
+            termOption.textContent = "Term 1";
+            semNumberSelect.appendChild(termOption);
+        }
+        semNumberSelect.value = "term1";
         semNumberSelect.disabled = true;
     } else {
+        if (termOption) termOption.remove();
+        semNumberSelect.value = "all";
         semNumberSelect.disabled = false;
     }
 }
@@ -268,7 +295,7 @@ function renderGrid() {
     const selectedFaculty = document.getElementById("facultyFilter").value;
     const selectedCourse = document.getElementById("courseFilter").value;
     const selectedCourseType = document.getElementById("courseTypeFilter").value;
-    const selectedSemNumber = document.getElementById("semNumberFilter").value;
+    const selectedSemNumber = normalizedSemNumber();
     const selectedStatus = document.getElementById("facultyStatusFilter").value;
 
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
