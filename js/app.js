@@ -33,11 +33,13 @@ document.addEventListener("DOMContentLoaded", () => {
     initFilters();
     renderGrid();
     setupEventListeners();
+    updateJumpButtonLabel();
 });
 
 function initFilters() {
     const facultySelect = document.getElementById("facultyFilter");
     const semNumberSelect = document.getElementById("semNumberFilter");
+    const courseSelect = document.getElementById("courseFilter");
 
     // Extract Unique Faculties
     const faculties = [...new Set(RAW_TIMETABLE_DATA.map(d => d.faculty))].filter(Boolean).sort();
@@ -58,18 +60,81 @@ function initFilters() {
         opt.textContent = `Semester ${num}`;
         semNumberSelect.appendChild(opt);
     });
+
+    // Extract Unique Courses (by code — every code belongs to exactly one
+    // semester/term, so selecting one shows all its sections together).
+    const courseMap = new Map();
+    RAW_TIMETABLE_DATA.forEach(d => {
+        if (!courseMap.has(d.code)) courseMap.set(d.code, d.title);
+    });
+    [...courseMap.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([code, title]) => {
+            const opt = document.createElement("option");
+            opt.value = code;
+            opt.textContent = `${code} — ${title}`;
+            courseSelect.appendChild(opt);
+        });
+}
+
+// Decide what the "Jump to..." button should do based on today's real date
+// relative to the term boundaries in TERMS:
+//   - before Term 1 starts        -> "Jump to Term Start" (Term 1)
+//   - inside Term 1 or Term 2     -> "Jump to Current Week" (today)
+//   - in the gap between terms    -> "Jump to Term 2 Start"
+//   - after Term 2 ends           -> "Jump to Term Start" (reset to Term 1)
+function getJumpTarget() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const terms = (typeof TERMS !== "undefined" ? TERMS : []).map(t => ({
+        name: t.name,
+        start: parseLocalDate(t.startDate),
+        end: parseLocalDate(t.endDate),
+    }));
+
+    if (terms.length === 0) {
+        return { label: "Jump to Term Start", date: parseLocalDate("2026-08-17") };
+    }
+
+    const firstTerm = terms[0];
+    const lastTerm = terms[terms.length - 1];
+
+    if (today < firstTerm.start) {
+        return { label: `Jump to ${firstTerm.name} Start`, date: firstTerm.start };
+    }
+
+    for (let i = 0; i < terms.length; i++) {
+        const term = terms[i];
+        if (today >= term.start && today <= term.end) {
+            return { label: "Jump to Current Week", date: today };
+        }
+        const nextTerm = terms[i + 1];
+        if (nextTerm && today > term.end && today < nextTerm.start) {
+            return { label: `Jump to ${nextTerm.name} Start`, date: nextTerm.start };
+        }
+    }
+
+    // After the last term has ended
+    return { label: `Jump to ${firstTerm.name} Start`, date: firstTerm.start };
+}
+
+function updateJumpButtonLabel() {
+    const btn = document.getElementById("jumpToTodayBtn");
+    btn.textContent = getJumpTarget().label;
 }
 
 function setupEventListeners() {
     document.getElementById("prevWeekBtn").addEventListener("click", () => changeWeek(-7));
     document.getElementById("nextWeekBtn").addEventListener("click", () => changeWeek(7));
     document.getElementById("jumpToTodayBtn").addEventListener("click", () => {
-        currentMonday = getMondayOf(parseLocalDate("2026-08-17"));
+        currentMonday = getMondayOf(getJumpTarget().date);
         renderGrid();
     });
 
     // Filter Change Listeners
     document.getElementById("facultyFilter").addEventListener("change", renderGrid);
+    document.getElementById("courseFilter").addEventListener("change", renderGrid);
     document.getElementById("courseTypeFilter").addEventListener("change", () => {
         updateSemNumberFilterState();
         renderGrid();
@@ -106,6 +171,7 @@ function renderGrid() {
 
     // Get Filter Values
     const selectedFaculty = document.getElementById("facultyFilter").value;
+    const selectedCourse = document.getElementById("courseFilter").value;
     const selectedCourseType = document.getElementById("courseTypeFilter").value;
     const selectedSemNumber = document.getElementById("semNumberFilter").value;
     const selectedStatus = document.getElementById("facultyStatusFilter").value;
@@ -137,6 +203,7 @@ function renderGrid() {
     RAW_TIMETABLE_DATA.forEach(item => {
         // Apply Dropdown Filters (these apply to the whole course-section)
         if (selectedFaculty !== "all" && item.faculty !== selectedFaculty) return;
+        if (selectedCourse !== "all" && item.code !== selectedCourse) return;
         if (selectedCourseType !== "all" && item.courseType !== selectedCourseType) return;
         if (selectedSemNumber !== "all" && item.semesterNumber !== selectedSemNumber) return;
         if (selectedStatus !== "all" && item.facultyStatus !== selectedStatus) return;
