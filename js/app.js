@@ -146,7 +146,7 @@ function refreshSemNumberOptions() {
 
     const allOpt = document.createElement("option");
     allOpt.value = "all";
-    allOpt.textContent = "All Semesters";
+    allOpt.textContent = "All Semesters & Terms";
     selectEl.appendChild(allOpt);
 
     semNumbers.forEach(num => {
