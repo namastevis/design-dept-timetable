@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderGrid();
     setupEventListeners();
     updateJumpButtonLabel();
+    initEmptySlotView();
 });
 
 function initFilters() {
@@ -358,5 +359,231 @@ function clearGrid() {
     document.querySelectorAll(".day-cell").forEach(cell => {
         cell.innerHTML = "";
         cell.classList.remove("holiday-cell");
+    });
+}
+
+// ============================================================
+// Find Empty Slot view
+//
+// Separate from the main weekly timetable: given a date range, an optional
+// Saturday toggle, and a set of selected faculty, finds day/time slots
+// where NONE of the selected faculty have a class ("empty" = free for
+// everyone selected simultaneously). A slot counts as empty if it's free
+// in at least one week within the range (not necessarily every week).
+// ============================================================
+
+const GRID_SLOTS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:15", "15:15", "16:15", "17:15"];
+const SLOT_LABELS = {
+    "08:00": "08:00 - 08:55",
+    "09:00": "09:00 - 09:55",
+    "10:00": "10:00 - 10:55",
+    "11:00": "11:00 - 11:55",
+    "12:00": "12:00 - 12:55",
+    "13:00": "13:00 - 13:55",
+    "14:15": "14:15 - 15:10",
+    "15:15": "15:15 - 16:10",
+    "16:15": "16:15 - 17:10",
+    "17:15": "17:15 - 18:10",
+};
+const DAY_LABELS = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday" };
+
+function switchView(view) {
+    const showTimetable = view === "timetable";
+
+    document.getElementById("timetableControls").style.display = showTimetable ? "" : "none";
+    document.getElementById("timetableGridSection").style.display = showTimetable ? "" : "none";
+    document.getElementById("emptySlotControls").style.display = showTimetable ? "none" : "";
+    document.getElementById("emptySlotGridSection").style.display = showTimetable ? "none" : "";
+
+    document.getElementById("viewToggleTimetable").classList.toggle("active", showTimetable);
+    document.getElementById("viewToggleEmptySlot").classList.toggle("active", !showTimetable);
+}
+
+// Flame convention: the 1st and 3rd Saturday of each month are off.
+function isWorkingSaturday(date) {
+    const weekOfMonth = Math.ceil(date.getDate() / 7);
+    return weekOfMonth !== 1 && weekOfMonth !== 3;
+}
+
+function initEmptySlotView() {
+    const terms = typeof TERMS !== "undefined" ? TERMS : [];
+    if (terms.length > 0) {
+        document.getElementById("emptyStartDate").value = terms[0].startDate;
+        document.getElementById("emptyEndDate").value = terms[terms.length - 1].endDate;
+    }
+
+    const faculty = [...new Set(RAW_TIMETABLE_DATA.map(d => d.faculty))].filter(Boolean).sort();
+    const container = document.getElementById("facultyMultiSelect");
+    faculty.forEach(name => {
+        const sample = RAW_TIMETABLE_DATA.find(d => d.faculty === name);
+        const label = document.createElement("label");
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = name;
+        cb.className = "faculty-checkbox";
+        cb.dataset.status = sample ? sample.facultyStatus : "";
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(name));
+        container.appendChild(label);
+    });
+
+    document.getElementById("selectAllFacultyBtn").addEventListener("click", () => {
+        container.querySelectorAll(".faculty-checkbox").forEach(cb => (cb.checked = true));
+    });
+    document.getElementById("clearFacultyBtn").addEventListener("click", () => {
+        container.querySelectorAll(".faculty-checkbox").forEach(cb => (cb.checked = false));
+    });
+    document.getElementById("selectRegularFacultyBtn").addEventListener("click", () => {
+        container.querySelectorAll(".faculty-checkbox").forEach(cb => (cb.checked = cb.dataset.status === "regular"));
+    });
+    document.getElementById("selectVisitingFacultyBtn").addEventListener("click", () => {
+        container.querySelectorAll(".faculty-checkbox").forEach(cb => (cb.checked = cb.dataset.status === "visiting"));
+    });
+
+    document.getElementById("findEmptySlotsBtn").addEventListener("click", runEmptySlotSearch);
+    document.getElementById("viewToggleTimetable").addEventListener("click", () => switchView("timetable"));
+    document.getElementById("viewToggleEmptySlot").addEventListener("click", () => switchView("emptySlot"));
+
+    // Render an initial blank grid so the view isn't empty before a search runs.
+    renderEmptySlotGrid(null, false);
+}
+
+function showEmptySlotMessage(text) {
+    const el = document.getElementById("emptySlotMessage");
+    if (!text) {
+        el.style.display = "none";
+        el.textContent = "";
+        return;
+    }
+    el.textContent = text;
+    el.style.display = "block";
+}
+
+function runEmptySlotSearch() {
+    const startVal = document.getElementById("emptyStartDate").value;
+    const endVal = document.getElementById("emptyEndDate").value;
+    const includeSaturday = document.getElementById("includeSaturdayCheckbox").checked;
+    const selectedFaculty = [...document.querySelectorAll(".faculty-checkbox:checked")].map(cb => cb.value);
+
+    if (!startVal || !endVal) {
+        showEmptySlotMessage("Pick a start and end date.");
+        renderEmptySlotGrid(null, includeSaturday);
+        return;
+    }
+    if (selectedFaculty.length === 0) {
+        showEmptySlotMessage("Select at least one faculty member.");
+        renderEmptySlotGrid(null, includeSaturday);
+        return;
+    }
+
+    const rangeStart = parseLocalDate(startVal);
+    const rangeEnd = parseLocalDate(endVal);
+    if (rangeEnd < rangeStart) {
+        showEmptySlotMessage("The end date is before the start date.");
+        renderEmptySlotGrid(null, includeSaturday);
+        return;
+    }
+
+    const days = includeSaturday ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Mon", "Tue", "Wed", "Thu", "Fri"];
+    const dayOffsets = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
+
+    // Precompute every busy [start,end] date range for the selected faculty,
+    // keyed by day + slot.
+    const busy = {};
+    days.forEach(d => {
+        busy[d] = {};
+        GRID_SLOTS.forEach(s => (busy[d][s] = []));
+    });
+    RAW_TIMETABLE_DATA.forEach(item => {
+        if (!selectedFaculty.includes(item.faculty)) return;
+        const itemStart = parseLocalDate(item.startDate);
+        const itemEnd = parseLocalDate(item.endDate);
+        item.sessions.forEach(session => {
+            if (!days.includes(session.day)) return;
+            session.timeSlots.forEach(slot => {
+                busy[session.day][slot].push({ start: itemStart, end: itemEnd });
+            });
+        });
+    });
+
+    // empty[day][slot] === true  -> free in at least one valid week (highlighted)
+    // empty[day][slot] === false -> checked, but always busy in every valid week
+    // empty[day][slot] === null  -> no valid week to check at all (e.g. an
+    //                                all-1st/3rd-Saturday range), shown as N/A
+    const empty = {};
+    const anyValidWeek = {};
+    days.forEach(d => {
+        empty[d] = {};
+        anyValidWeek[d] = {};
+        GRID_SLOTS.forEach(s => {
+            empty[d][s] = false;
+            anyValidWeek[d][s] = false;
+        });
+    });
+
+    let weekMonday = getMondayOf(rangeStart);
+    while (weekMonday <= rangeEnd) {
+        days.forEach(day => {
+            const dayDate = new Date(weekMonday);
+            dayDate.setDate(dayDate.getDate() + dayOffsets[day]);
+            if (dayDate < rangeStart || dayDate > rangeEnd) return;
+            if (getHolidayForDate(formatLocalDate(dayDate))) return;
+            if (day === "Sat" && !isWorkingSaturday(dayDate)) return;
+
+            GRID_SLOTS.forEach(slot => {
+                if (empty[day][slot]) return; // already confirmed free in an earlier week
+                anyValidWeek[day][slot] = true;
+                const isBusy = busy[day][slot].some(range => dayDate >= range.start && dayDate <= range.end);
+                if (!isBusy) empty[day][slot] = true;
+            });
+        });
+        const nextMonday = new Date(weekMonday);
+        nextMonday.setDate(nextMonday.getDate() + 7);
+        weekMonday = nextMonday;
+    }
+
+    const result = {};
+    let totalEmpty = 0;
+    days.forEach(day => {
+        result[day] = {};
+        GRID_SLOTS.forEach(slot => {
+            if (!anyValidWeek[day][slot]) {
+                result[day][slot] = null;
+            } else {
+                result[day][slot] = empty[day][slot];
+                if (empty[day][slot]) totalEmpty++;
+            }
+        });
+    });
+
+    showEmptySlotMessage(totalEmpty === 0 ? "No empty slots found for this faculty selection and date range." : null);
+    renderEmptySlotGrid(result, includeSaturday);
+}
+
+function renderEmptySlotGrid(resultMap, includeSaturday) {
+    const days = includeSaturday ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
+    const head = document.getElementById("emptySlotHead");
+    head.innerHTML = `<tr><th class="time-col">Time Slot</th>${days.map(d => `<th>${DAY_LABELS[d]}</th>`).join("")}</tr>`;
+
+    const body = document.getElementById("emptySlotBody");
+    body.innerHTML = "";
+    GRID_SLOTS.forEach(slot => {
+        let rowHtml = `<td class="time-label">${SLOT_LABELS[slot]}</td>`;
+        days.forEach(day => {
+            const status = resultMap ? resultMap[day][slot] : null;
+            let cls = "day-cell slot-unavailable";
+            let content = "";
+            if (status === true) {
+                cls = "day-cell slot-free";
+                content = `<div class="free-label">Free</div>`;
+            } else if (status === false) {
+                cls = "day-cell slot-busy";
+            }
+            rowHtml += `<td class="${cls}">${content}</td>`;
+        });
+        const tr = document.createElement("tr");
+        tr.innerHTML = rowHtml;
+        body.appendChild(tr);
     });
 }

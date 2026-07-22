@@ -37,6 +37,17 @@ body {
     padding: 0 1rem;
 }
 
+/* View toggle + the active filter panel stay pinned to the top of the
+   viewport while scrolling; only the grid below scrolls underneath. */
+.sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #f4f6f9;
+    padding-top: 0.75rem;
+    margin-top: -0.75rem;
+}
+
 .controls-card, .grid-card {
     background: #ffffff;
     border-radius: 8px;
@@ -134,12 +145,150 @@ body {
     margin-bottom: 0.35rem;
 }
 
-.filter-group select {
+.filter-group select,
+.filter-group input[type="date"] {
     padding: 0.5rem;
     border: 1px solid #cbd5e0;
     border-radius: 5px;
     background: white;
     font-size: 0.9rem;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.view-toggle-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #cbd5e0;
+    background: #fff;
+    color: #4a5568;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s, color 0.2s;
+}
+
+.view-toggle-btn.active {
+    background: #2d3748;
+    color: #fff;
+    border-color: #2d3748;
+}
+
+.empty-slot-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.checkbox-group {
+    justify-content: flex-end;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.faculty-select-panel {
+    margin-bottom: 1.25rem;
+}
+
+.faculty-select-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.faculty-select-header label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.faculty-quick-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: #3182ce;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.link-btn:hover {
+    color: #2b6cb0;
+}
+
+.faculty-multiselect {
+    max-height: 170px;
+    overflow-y: auto;
+    border: 1px solid #cbd5e0;
+    border-radius: 5px;
+    padding: 0.6rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 0.3rem;
+}
+
+.faculty-multiselect label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #333;
+    margin-bottom: 0;
+}
+
+.empty-slot-message {
+    margin-top: 0.85rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: #fff5f5;
+    color: #742a2a;
+    border: 1px solid #feb2b2;
+}
+
+.day-cell.slot-free {
+    background-color: #f0fff4;
+}
+
+.day-cell.slot-free .free-label {
+    color: #22543d;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.day-cell.slot-unavailable {
+    background-color: #f7f7f7;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.03),
+        rgba(0, 0, 0, 0.03) 8px,
+        transparent 8px,
+        transparent 16px
+    );
 }
 
 .table-responsive {
@@ -198,11 +347,11 @@ th {
     color: #22543d;
 }
 
-/* Term / Block Course Style (Red/Orange) */
+/* Term / Block Course Style (Blue) */
 .course-card.term {
-    background-color: #fff5f5;
-    border-left-color: #e53e3e;
-    color: #742a2a;
+    background-color: #ebf8ff;
+    border-left-color: #3182ce;
+    color: #1a4971;
 }
 
 .course-card .code {

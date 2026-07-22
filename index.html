@@ -15,79 +15,125 @@
     </header>
 
     <main class="dashboard">
-      <!-- Controls & Filters Section -->
-      <section class="controls-card">
-        <!-- Week Navigation Controls -->
-        <div class="week-controls">
-          <button id="prevWeekBtn" class="btn">&larr; Previous Week</button>
-          <div class="week-info">
-            <h2 id="currentWeekDisplay">Loading dates...</h2>
-          </div>
-          <button id="nextWeekBtn" class="btn">Next Week &rarr;</button>
-          <button id="jumpToTodayBtn" class="btn btn-secondary">
-            Jump to Term Start
-          </button>
+      <!-- Sticky header: view toggle + whichever filter panel is active stay
+           fixed at the top while the grid below scrolls underneath. -->
+      <div class="sticky-header">
+        <div class="view-toggle">
+          <button id="viewToggleTimetable" class="view-toggle-btn active" type="button">Timetable View</button>
+          <button id="viewToggleEmptySlot" class="view-toggle-btn" type="button">Find Empty Slot</button>
         </div>
 
-        <!-- Filters -->
-        <div class="filters-row">
-          <div class="filters-grid">
-            <div class="filter-group">
-              <label for="courseTypeFilter">Course Type:</label>
-              <select id="courseTypeFilter">
-                <option value="all">All Course Types</option>
-                <option value="semester">Semester (Green)</option>
-                <option value="term">Term (Red/Orange)</option>
-              </select>
+        <!-- Controls & Filters Section (Timetable view) -->
+        <section class="controls-card" id="timetableControls">
+          <!-- Week Navigation Controls -->
+          <div class="week-controls">
+            <button id="prevWeekBtn" class="btn">&larr; Previous Week</button>
+            <div class="week-info">
+              <h2 id="currentWeekDisplay">Loading dates...</h2>
+            </div>
+            <button id="nextWeekBtn" class="btn">Next Week &rarr;</button>
+            <button id="jumpToTodayBtn" class="btn btn-secondary">
+              Jump to Term Start
+            </button>
+          </div>
+
+          <!-- Filters -->
+          <div class="filters-row">
+            <div class="filters-grid">
+              <div class="filter-group">
+                <label for="courseTypeFilter">Course Type:</label>
+                <select id="courseTypeFilter">
+                  <option value="all">All Course Types</option>
+                  <option value="semester">Semester (Green)</option>
+                  <option value="term">Term (Blue)</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label for="semNumberFilter">Semester:</label>
+                <select id="semNumberFilter">
+                  <option value="all">All Semesters</option>
+                  <!-- Options populated dynamically: Sem 3, 5, 7 -->
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label for="courseFilter">Course:</label>
+                <select id="courseFilter">
+                  <option value="all">All Courses</option>
+                  <!-- Options populated dynamically: shows all sections of the selected course -->
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label for="facultyFilter">Faculty Member:</label>
+                <select id="facultyFilter">
+                  <option value="all">All Faculty</option>
+                  <!-- Options populated dynamically -->
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label for="facultyStatusFilter">Faculty Type:</label>
+                <select id="facultyStatusFilter">
+                  <option value="all">All Faculty Types</option>
+                  <option value="regular">Regular</option>
+                  <option value="visiting">Visiting</option>
+                </select>
+              </div>
             </div>
 
-            <div class="filter-group">
-              <label for="semNumberFilter">Semester:</label>
-              <select id="semNumberFilter">
-                <option value="all">All Semesters</option>
-                <!-- Options populated dynamically: Sem 3, 5, 7 -->
-              </select>
-            </div>
+            <button
+              id="resetFiltersBtn"
+              class="reset-btn"
+              type="button"
+              title="Reset all filters"
+              aria-label="Reset all filters"
+            >
+              &#8635;
+            </button>
+          </div>
+        </section>
 
+        <!-- Controls & Filters Section (Find Empty Slot view) -->
+        <section class="controls-card" id="emptySlotControls" style="display: none">
+          <div class="empty-slot-filters">
             <div class="filter-group">
-              <label for="courseFilter">Course:</label>
-              <select id="courseFilter">
-                <option value="all">All Courses</option>
-                <!-- Options populated dynamically: shows all sections of the selected course -->
-              </select>
+              <label for="emptyStartDate">From:</label>
+              <input type="date" id="emptyStartDate" />
             </div>
-
             <div class="filter-group">
-              <label for="facultyFilter">Faculty Member:</label>
-              <select id="facultyFilter">
-                <option value="all">All Faculty</option>
-                <!-- Options populated dynamically -->
-              </select>
+              <label for="emptyEndDate">To:</label>
+              <input type="date" id="emptyEndDate" />
             </div>
-
-            <div class="filter-group">
-              <label for="facultyStatusFilter">Faculty Type:</label>
-              <select id="facultyStatusFilter">
-                <option value="all">All Faculty Types</option>
-                <option value="regular">Regular</option>
-                <option value="visiting">Visiting</option>
-              </select>
+            <div class="filter-group checkbox-group">
+              <label>
+                <input type="checkbox" id="includeSaturdayCheckbox" />
+                Include Saturdays (1st &amp; 3rd off)
+              </label>
             </div>
           </div>
 
-          <button
-            id="resetFiltersBtn"
-            class="reset-btn"
-            type="button"
-            title="Reset all filters"
-            aria-label="Reset all filters"
-          >
-            &#8635;
-          </button>
-        </div>
-      </section>
+          <div class="faculty-select-panel">
+            <div class="faculty-select-header">
+              <label>Faculty (select one or more):</label>
+              <div class="faculty-quick-actions">
+                <button type="button" id="selectAllFacultyBtn" class="link-btn">All</button>
+                <button type="button" id="selectRegularFacultyBtn" class="link-btn">Regular</button>
+                <button type="button" id="selectVisitingFacultyBtn" class="link-btn">Visiting</button>
+                <button type="button" id="clearFacultyBtn" class="link-btn">Clear</button>
+              </div>
+            </div>
+            <div id="facultyMultiSelect" class="faculty-multiselect"></div>
+          </div>
+
+          <button id="findEmptySlotsBtn" class="btn" type="button">Find Empty Slots</button>
+          <p id="emptySlotMessage" class="empty-slot-message" style="display: none"></p>
+        </section>
+      </div>
 
       <!-- Timetable Grid -->
+      <div id="timetableGridSection">
       <section class="grid-card">
         <p class="swipe-hint">&larr; Swipe to see more days &rarr;</p>
         <div class="table-responsive">
@@ -187,6 +233,19 @@
           </table>
         </div>
       </section>
+      </div>
+
+      <!-- Find Empty Slot Grid -->
+      <div id="emptySlotGridSection" style="display: none">
+        <section class="grid-card">
+          <div class="table-responsive">
+            <table id="emptySlotGrid">
+              <thead id="emptySlotHead"></thead>
+              <tbody id="emptySlotBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </main>
 
     <!-- Scripts -->
